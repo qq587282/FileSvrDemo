@@ -55,11 +55,6 @@ func HandlerUpload(writer http.ResponseWriter, request *http.Request) {
 		savePath     string 
 		saveFile     *os.File
 	)
-	// 设置允许跨域
-	writer.Header().Set("Access-Control-Allow-Origin", "*")
-	writer.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, X-Requested-By, If-Modified-Since, X-File-Name, X-File-Type, Cache-Control, Origin")
-	writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
-	writer.Header().Set("Access-Control-Expose-Headers", "Authorization")
 
 	if request.Method != "POST" {
 		fmt.Printf("不是提交")
@@ -81,7 +76,7 @@ func HandlerUpload(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 	defer uploadFile.Close()
-	fmt.Printf("上传文件：文件名[%s],大小[%d],上传时间[%d]",uploadHeader.Filename,uploadHeader.Size,time.Now().Unix())
+	fmt.Printf("上传文件：文件名[%s],大小[%d],上传时间[%d] \n",uploadHeader.Filename,uploadHeader.Size,time.Now().Unix())
 	savePath = FileSavePath +"/" + uploadHeader.Filename
 	fmt.Printf("上传文件：文件名[%s]",savePath)
 	//保存文件到本地
