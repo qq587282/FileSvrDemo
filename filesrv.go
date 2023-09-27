@@ -90,7 +90,7 @@ func HandlerUpload(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 	defer saveFile.Close()	
-	
+
 	buffer := make([]byte, 1024)
 	if _, err = io.CopyBuffer(saveFile, uploadFile, buffer); err != nil {
 		fmt.Printf("写入文件失败")
@@ -104,12 +104,8 @@ func HandlerUpload(writer http.ResponseWriter, request *http.Request) {
 
 }
 
-// 上传文件
-func HandlerFile(writer http.ResponseWriter, request *http.Request) {
-
-	absPath, _ := filepath.Abs(FileSavePath)
-	http.Handle("/file", http.FileServer(http.Dir(absPath)))
-
+// 下载文件
+func HandlerDownload(writer http.ResponseWriter, request *http.Request) {
 }
 
 func main() {
@@ -118,6 +114,7 @@ func main() {
 	http.Handle("/", http.FileServer(http.Dir(absPath)))
 	http.HandleFunc("/upload.html", HandlerUploadPage)
 	http.HandleFunc("/v1/upload", HandlerUpload)
+	http.HandleFunc("/v1/download", HandlerDownload)
 
 	err := http.ListenAndServe(":8088", nil)
 	if err != nil  {
