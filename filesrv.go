@@ -9,9 +9,15 @@ import (
 )
 
 func main() {
+	// var x float64 = 3.4
+	// fmt.Println(reflect.TypeOf(x))
+	// fmt.Println(reflect.ValueOf(x))
+	// v := reflect.ValueOf(x)
+	// fmt.Println(v.Interface())
+	handler.ShowFile()
 	absPath, _ := filepath.Abs(filepath.Dir(os.Args[0]))
 	absPath = absPath + handler.FileSavePath
-	filepath.Walk(handler.FileSavePath, handler.WalkFunc)
+	//filepath.Walk(handler.FileSavePath, handler.WalkFunc)
 	http.Handle("/", http.FileServer(http.Dir(absPath)))
 	http.HandleFunc("/upload.html", handler.HandlerUploadPage)
 	http.HandleFunc("/v1/upload", handler.HandlerUpload)
@@ -24,5 +30,4 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
-
 }

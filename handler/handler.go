@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"FileSvrDemo/utils"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -19,13 +20,6 @@ const (
 	FileSavePath string = "./data"
 	MaxFileSize  int64  = 128 << 20
 )
-
-// 记录文件数据 查找的时候使用
-type FileData struct {
-	Name      string
-	Size      int64
-	TimeStamp int64
-}
 
 // 返回消息
 type Response struct {
@@ -74,6 +68,38 @@ const searchHtml string = `
 </form>
 </body>
 </html>`
+
+// 记录文件数据 查找的时候使用
+type FileData struct {
+	Name      string //文件名
+	Size      int64  //大小
+	Sha1      string // 哈希
+	Location  string //位置
+	TimeStamp int64  //时间
+}
+
+// 保存文件信息映射
+var fileDatas map[string]FileData
+
+// 初始化
+func init() {
+	fileDatas = make(map[string]FileData)
+}
+
+// UpdateFileData 更新文件信息
+func UpdateFileData(fileData FileData) {
+	fileDatas[fileData.Sha1] = fileData
+}
+
+// GetFileData 获取文件信息对象
+func GetFileData(Sha1 string) FileData {
+	return fileDatas[Sha1]
+}
+
+// RemoveFileData 删除文件信息
+func RemoveFileData(Sha1 string) {
+	delete(fileDatas, Sha1)
+}
 
 // 上传页面
 func HandlerUploadPage(writer http.ResponseWriter, request *http.Request) {
@@ -154,10 +180,17 @@ func HandlerUpload(writer http.ResponseWriter, request *http.Request) {
 	defer saveFile.Close()
 	defer uploadFile.Close()
 
-	//to do 保持数据查找
-	filedata.Name = uploadHeader.Filename
-	filedata.Size = request.ContentLength
-	filedata.TimeStamp = time.Now().Unix()
+	//保存数据查找
+	filedata.Name = uploadHeader.Filename      //文件名
+	filedata.Size = request.ContentLength      //大小
+	filedata.TimeStamp = time.Now().Unix()     //时间
+	filedata.Sha1 = utils.GetFileMD5(saveFile) // 哈希
+	filedata.Location = savePath               //位置
+	if condition {
+
+	}
+
+	UpdateFileData(filedata)
 
 	// 返回结果
 	response := Response{"上传成功!", 200}
@@ -281,4 +314,14 @@ func WalkFunc(path string, info os.FileInfo, err error) error {
 		fmt.Println(path)
 	}
 	return nil
+}
+
+func ShowFile() {
+	fileList, err := utils.ListFiles(FileSavePath)
+	if err == nil {
+		for i := 0; i < len(fileList); i++ {
+			savePath := fileList[i]
+			fmt.Printf(savePath + "\n")
+		}
+	}
 }
