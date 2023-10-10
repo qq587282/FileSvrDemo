@@ -69,6 +69,20 @@ const searchHtml string = `
 </body>
 </html>`
 
+const delHtml string = `
+<!DOCTYPE html>
+<head>
+	<meta charset="UTF-8">
+	<title>删除文件</title>
+</head>
+<body>
+<form action="/v1/del" method="post" enctype="multipart/form-data">
+	<input type="text" name="file"/>
+	<input type="submit" value="删除"/>
+</form>
+</body>
+</html>`
+
 // 记录文件数据 查找的时候使用
 type FileData struct {
 	Name      string //文件名
@@ -82,7 +96,7 @@ type FileData struct {
 var fileDatas map[string]FileData
 
 // 初始化
-func init() {
+func Init() {
 	fileDatas = make(map[string]FileData)
 }
 
@@ -125,6 +139,14 @@ func HandlerSearchPage(writer http.ResponseWriter, request *http.Request) {
 	}
 }
 
+// 删除页面
+func HandlerDelPage(writer http.ResponseWriter, request *http.Request) {
+	if request.Method == http.MethodPost {
+		writer.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, _ = writer.Write([]byte(delHtml))
+	}
+}
+
 // 上传文件
 func HandlerUpload(writer http.ResponseWriter, request *http.Request) {
 	var (
@@ -134,6 +156,7 @@ func HandlerUpload(writer http.ResponseWriter, request *http.Request) {
 		uploadHeader *multipart.FileHeader
 		savePath     string
 		saveFile     *os.File
+		retinfo      string
 	)
 
 	if request.Method != "POST" {
@@ -186,14 +209,11 @@ func HandlerUpload(writer http.ResponseWriter, request *http.Request) {
 	filedata.TimeStamp = time.Now().Unix()     //时间
 	filedata.Sha1 = utils.GetFileMD5(saveFile) // 哈希
 	filedata.Location = savePath               //位置
-	if condition {
-
-	}
-
 	UpdateFileData(filedata)
+	retinfo += filedata.Sha1
 
 	// 返回结果
-	response := Response{"上传成功!", 200}
+	response := Response{"上传成功!\n" + retinfo, 200}
 	// 使用 json 包将结构体序列化
 	jsonResponse, _ := json.Marshal(response)
 	// 设置Content-Type，强制浏览器显示内容为JSON格式
@@ -250,9 +270,12 @@ func HandlerDownload(writer http.ResponseWriter, request *http.Request) {
 // 查找文件
 func HandlerSearch(writer http.ResponseWriter, request *http.Request) {
 	var (
-		fileName string
-		retinfo  string
-		buffer   bytes.Buffer
+		err        error
+		fileName   string
+		retinfo    string
+		buffer     bytes.Buffer
+		targetFile *os.File
+		fileSha1   string // 哈希
 	)
 
 	fileName = request.FormValue("file")
@@ -272,8 +295,61 @@ func HandlerSearch(writer http.ResponseWriter, request *http.Request) {
 			fmt.Println(file)
 			retinfo = buffer.String()
 		}
+
+		if targetFile, err = os.Open(buffer.String()); err != nil {
+			fmt.Printf("文件异常")
+			return
+		}
+		fileSha1 = utils.GetFileMD5(targetFile) // 哈希
 	} else {
 		retinfo = "没有找到"
+	}
+
+	defer targetFile.Close()
+	// 返回结果
+	response := Response{retinfo + " " + fileSha1, 200}
+	// 使用 json 包将结构体序列化
+	jsonResponse, _ := json.Marshal(response)
+	// 设置Content-Type，强制浏览器显示内容为JSON格式
+	writer.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	// 发送响应给客户端
+	writer.Write(jsonResponse)
+}
+
+// 删除文件
+func HandlerdDel(writer http.ResponseWriter, request *http.Request) {
+	var (
+		err      error
+		fileName string
+		retinfo  string
+		delFile  *os.File
+		fileSha1 string // 哈希
+	)
+
+	fileName = request.FormValue("file")
+	if len(fileName) == 0 {
+		fmt.Printf("删除文件名为空")
+		return
+	}
+
+	fileName = FileSavePath + "/" + fileName
+	if delFile, err = os.Open(fileName); err != nil {
+		fmt.Printf("文件异常")
+		return
+	}
+
+	if _, err = os.Stat(fileName); err != nil {
+		fmt.Printf("文件异常")
+		return
+	}
+
+	fileSha1 = utils.GetFileMD5(delFile) // 哈希
+	defer delFile.Close()
+
+	RemoveFileData(fileSha1)
+	if err = os.Remove(fileName); err != nil {
+		fmt.Printf("文件删除失败")
+		return
 	}
 
 	// 返回结果
@@ -324,4 +400,11 @@ func ShowFile() {
 			fmt.Printf(savePath + "\n")
 		}
 	}
+}
+
+// 读取配置文件
+func LoadCfg() {
+	// 解析，读取配置文件内容
+
+	return
 }

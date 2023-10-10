@@ -9,11 +9,7 @@ import (
 )
 
 func main() {
-	// var x float64 = 3.4
-	// fmt.Println(reflect.TypeOf(x))
-	// fmt.Println(reflect.ValueOf(x))
-	// v := reflect.ValueOf(x)
-	// fmt.Println(v.Interface())
+	handler.Init()
 	handler.ShowFile()
 	absPath, _ := filepath.Abs(filepath.Dir(os.Args[0]))
 	absPath = absPath + handler.FileSavePath
@@ -25,6 +21,8 @@ func main() {
 	http.HandleFunc("/v1/download", handler.HandlerDownload)
 	http.HandleFunc("/search.html", handler.HandlerSearchPage)
 	http.HandleFunc("/v1/search", handler.HandlerSearch)
+	http.HandleFunc("/del.html", handler.HandlerDelPage)
+	http.HandleFunc("/v1/del", handler.HandlerdDel)
 
 	err := http.ListenAndServe(":8088", nil)
 	if err != nil {
